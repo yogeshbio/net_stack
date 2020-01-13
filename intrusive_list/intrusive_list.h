@@ -9,6 +9,11 @@
  * circular doubly linked list macros                                         *
  *****************************************************************************/
 
+struct list_head {
+    struct list_head *next, *prev;
+};
+
+
 #define CDL_APPEND(head,add)                                                                   \
     CDL_APPEND2(head,add,prev,next)
 
@@ -225,10 +230,38 @@ do {                                                                            
 
 #endif
 
-// This is taken from Linux
+// Taken from linux: but modified as per needs
+
+/* Note on offset of: How it works:
+#define offset_of(s,m) ((size_t)(&(((s*)(0))->m))) where s is the structure and m is the element
+ *
+ * (
+  (size_t(       // 4.
+    &( (         // 3.
+      (s*)(0)    // 1.
+     )->m )      // 2.
+  )
+)
+Working from the inside out, this is ...
+
+1. Casting the value zero to the struct pointer type s*
+2. Getting the struct field m of this (illegally placed) struct object
+3. Getting the address of this m field
+4. Casting the address to an size_t
+Conceptually this is placing a struct object at memory address zero and then finding out at what the address of a particular
+field is. This could allow you to figure out the offsets in memory of each field in a struct so you could write your own
+serializers and deserializers to convert structs to and from byte arrays.
+Of course if you would actually dereference a zero pointer your program would crash, but actually everything happens in the compiler and no actual zero pointer is dereferenced at runtime.
+
+*/
+
+#define offset_of(s,m) ((size_t)(&(((s*)(0))->m)))
+
+// This is taken from Linux, mptr points to the address passed :ptr (e.g say 0x1008 and offset_of could be 0x08), hence base addr of the struct would
+// be 0x1008 - 0x08 = 0x1000
 #define container_of(ptr, type, member) ({			\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
-	(type *)( (char *)__mptr - offsetof(type,member) );})
+	(type *)( (char *)__mptr - offset_of(type,member) );})
 
 /**
  * list_entry - get the struct for this entry
