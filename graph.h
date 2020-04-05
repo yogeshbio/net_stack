@@ -118,6 +118,7 @@ get_intf_by_name_from_node(node_t *node,
 
         return (node->intf[i]); // return pointer to the local interface
     }
+    return NULL;
 }
 
 /*

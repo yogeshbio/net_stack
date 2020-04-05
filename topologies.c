@@ -20,7 +20,7 @@
   +----------+                                              +----------+
 
   PS:  R0_re, R1_re and R2_re represent nodes
-       0/0, 0/1, 0/3, 0/5 etc represent interfaces
+       0/0, 0/1, 0/3, 0/5 etc represent interfaces (must be read as eth0/0, eth0/1 etc)
        Each node can have multiple interfaces but only one MAC addr, each interface will have one IP addr.
 
 
