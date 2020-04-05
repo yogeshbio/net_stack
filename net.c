@@ -9,7 +9,6 @@
 #include "net.h"
 #include "stdint.h"
 
-
 /*
    Hash function to generate a random number for MAC. This hash function is said to have minimal collisions.
    No guarantee on this, but this is as per some stack overflow comment
@@ -32,7 +31,7 @@ uint64_t MurmurOAAT64_hash ( const char * key)
 void
 assign_intf_mac_addr(interface_t *intf)
 {
-    char mac_val[6];
+    //char mac_val[6];
     node_t* node = intf->owner;
     if(!node)
     {
@@ -60,8 +59,8 @@ set_node_loopback_addr(node_t* node, char* ipaddr)
         return false;
     }
     node->node_nw_props.is_loopback_configured = true;
-    memcpy(GET_NODE_LB(node), ipaddr, IP_ADDR_SIZE);
-    GET_NODE_LB(node)[IP_ADDR_SIZE-1] = '\0'; // add null for termination
+    memcpy(GET_NODE_LB(node), ipaddr, IPV4_ADDR_LEN_IN_BYTES);
+    GET_NODE_LB(node)[IPV4_ADDR_LEN_IN_BYTES-1] = '\0'; // add null for termination
     return true;
 }
 
@@ -82,8 +81,8 @@ set_intf_of_node_ip_addr(node_t* node, char* if_name, char* ipaddr, char mask)
         return false;
     }
     intf->intf_nw_props.is_ip_addr_configured = true;
-    memcpy(GET_INTF_IP(intf), ipaddr, IP_ADDR_SIZE);
-    GET_INTF_IP(intf)[IP_ADDR_SIZE-1] = '\0'; // add null for termination
+    memcpy(GET_INTF_IP(intf), ipaddr, IPV4_ADDR_LEN_IN_BYTES);
+    GET_INTF_IP(intf)[IPV4_ADDR_LEN_IN_BYTES-1] = '\0'; // add null for termination
     intf->intf_nw_props.mask     = mask;
     return true;
 }
@@ -99,16 +98,59 @@ unset_intf_of_node_ip_addr(node_t* node, char* if_name)
         return false;
     }
     intf->intf_nw_props.is_ip_addr_configured = false;
-    memset(GET_INTF_IP(intf), 0, IP_ADDR_SIZE);
+    memset(GET_INTF_IP(intf), 0, IPV4_ADDR_LEN_IN_BYTES);
     return true;
 }
 
+/*
+ *  Function to return the local interface of the node having the subnet
+ *  in which 'ip_addr' lies i.e. the subnet of the ip addr and the subnet of the
+ *  interface must be the same.
+ */
+interface_t *
+node_get_matching_subnet_interface(node_t *node, char *ip_addr)
+{
+      interface_t *intf;
+      char mask;
+      char *intf_ip_addr = NULL;
+      char intf_subnet[IPV4_ADDR_LEN_IN_BYTES]; // subnet of the interface
+      char subnet2[IPV4_ADDR_LEN_IN_BYTES];    // subnet of the input ip
 
+     // Go through all the interfaces and for each interface apply the mask
+    for(int i=0; i<MAX_INTF_PER_NODE; i++)
+    {
+        intf = node->intf[i];
+        if(!intf || !(IS_INTF_IP_ADDR_CONFIGURED(intf))) // check if the ip addr is configured
+            continue;
+
+        // Get ip and mask for the interface, and then use apply_mask() to get subnet prefix from the mask
+        intf_ip_addr = GET_INTF_IP(intf);
+
+        mask = GET_INTF_MASK(intf);
+        memset(intf_ip_addr, 0, IPV4_ADDR_LEN_IN_BYTES);
+        memset(subnet2, 0, IPV4_ADDR_LEN_IN_BYTES);
+        apply_mask(intf_ip_addr, mask, intf_subnet); // fills the subnet prefix
+        apply_mask(ip_addr, mask, subnet2);
+
+        if(strncmp(intf_subnet, subnet2, IPV4_ADDR_LEN_IN_BYTES) == 0)
+            return intf;
+
+    }
+
+    return NULL;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+
+//                         DUMP FUNCTIONS
+
+///////////////////////////////////////////////////////////////////////////
 
 /*
- * Dump Functions of the Network.
- * node properties
- * interface properties
+ *     Dump Functions of the Network.
+ *     node properties
+ *     interface properties
  */
 
 void dump_intf_props(interface_t* intf)

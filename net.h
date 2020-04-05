@@ -9,8 +9,8 @@
 #include "stdio.h"
 #include <stdbool.h>
 
+#include "utils.h"
 
-#define IP_ADDR_SIZE 16
 #define MAC_SIZE     6
 
 typedef struct node_nw_props node_nw_props_t;
@@ -21,7 +21,12 @@ typedef struct intf_nw_props intf_nw_props_t;
 // For INTF
 #define GET_INTF_MAC(intf_ptr)    (intf_ptr)->intf_nw_props.mac.mac_addr         // get interface mac addr
 #define GET_INTF_IP(intf_ptr)     (intf_ptr)->intf_nw_props.intf_ip.ip_addr           // get interface ip addr
-#define IS_INTF_IN_L3_MODE(intf_ptr)  ((intf_ptr)->intf_nw_props->is_ip_addr_configured)? true:false
+#define GET_INTF_MASK(intf_ptr)     (intf_ptr)->intf_nw_props.mask           // get interface mask
+           // below both macros are same
+#define IS_INTF_IP_ADDR_CONFIGURED(intf_ptr) \
+        ((intf_ptr)->intf_nw_props.is_ip_addr_configured)? true:false
+#define IS_INTF_IN_L3_MODE(intf_ptr) \
+        ((intf_ptr)->intf_nw_props.is_ip_addr_configured)? true:false
 
 // For NODE
 #define GET_NODE_LB(node_ptr)     (node_ptr)->node_nw_props.loopback_ip.ip_addr  // get node loopback ip addr
@@ -33,7 +38,8 @@ typedef struct intf_nw_props intf_nw_props_t;
 
 typedef struct
 {
-    unsigned char ip_addr[IP_ADDR_SIZE];  // ip addr is of the format e.g. (192:168:182:145) which is 15 bytes and 1 NULL byte
+    unsigned char ip_addr[IPV4_ADDR_LEN_IN_BYTES];  // ip addr is of the format e.g
+                                                // (192:168:182:145) which is 15 bytes and 1 NULL byte
 }ip_addr_t;
 
 typedef struct
