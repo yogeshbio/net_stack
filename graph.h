@@ -23,15 +23,18 @@ typedef struct interface_ interface_t;
 #define MAX_INTF_PER_NODE   10
 
 
-
+/*
+ * Each node has interfaces and these interfaces are linked with each other.
+ * There can be multiple interfaces per node.
+ */
 
 struct interface_
 {
     char if_name[IF_NAME_SIZE];
     struct node_ *owner; //owner of the interface
     /*
-       the interfaces  must link with each other, the easiest way is to use a pointer. Two interfaces can be linked if
-       pointers of both interfaces point to each other
+       the interfaces  must link with each other, the easiest way is to use a pointer.
+       Two interfaces can be linked if pointers of both interfaces point to each other
      */
     struct link_ *link;
     intf_nw_props_t intf_nw_props;
@@ -46,14 +49,31 @@ struct link_
 };
 
 
-
+/*
+ * Each node contains interfaces (max=10) and between interfaces there
+ * is a link.
+ * Node embeds the graph list structure. Graph acts as HEAD node. Node will be attached
+ * to the this HEAD graph.
+ */
 struct node_
 {
     char node_name[NODE_NAME_SIZE];
     interface_t *intf[MAX_INTF_PER_NODE]; /* pointer to each interface. NULL means the interface is empty.*/
     struct list_head graph;   /* intrusive list of graph */
     node_nw_props_t node_nw_props;
+    int udp_port_no;
+    int udp_socket_fd;
 };
+
+/* The linked list is intrusive: meaning the list pointers are part of the data itself,
+ * Advantages of intrusive list: number of allocations are less compared to the
+ * traditional linked list because you need to allocate memory to the embedded struct
+ * only once where as in traditional lists you need to allocate it
+ * for the data once and to the struct list once.
+ * Less dereferencing: In traditional lists you need to dereference once for getting the
+ * list address and once again to get data. In intrusive lists it is only once.
+ * Graph will be the HEAD node and other nodes will be attached to it using CDL_APPEND calls
+ */
 
 
 struct graph_

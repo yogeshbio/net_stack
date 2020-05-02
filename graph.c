@@ -7,7 +7,7 @@
 
 #include "graph.h"
 #include <string.h>
-
+#include "comm.h"
 
 struct list_head *head = NULL;
 
@@ -19,24 +19,26 @@ graph_t* create_new_graph(char* topology_name)
     strncpy(g->topology_name, topology_name, size);
     g->topology_name[size+1] = '\0';
 
-    /* The linked list is intrusive: meaning the list pointers are part of the data itself, hence number of allocations are less compared
-       to the traditional linked list
+    /* The linked list is intrusive: meaning the list pointers are part of the data itself,
+       hence number of allocations are less compared to the traditional linked list
        This is the first element of the list prepared, as head was initialized to NULL.
-       Hence Graph will be the HEAD node and other nodes will be attached to it using CDL_APPEND calls
+       Hence Graph will be the HEAD node and other nodes will be attached to it
+       using CDL_APPEND calls
      */
     CDL_APPEND(head,&g->node_list);
     return g;
 
 }
 
+/* create a new node and attach it to the graph */
 node_t* create_graph_node(graph_t* graph, char* node_name)
 {
-    node_t* node = calloc(1,sizeof(node_t));  // create a new node and attach it to the graph
+    node_t* node = calloc(1,sizeof(node_t));
     int size     =  strlen(node_name);
     strncpy(node->node_name, node_name, size);
     node->node_name[size+1] = '\0';   // strlen does not include NULL character
     init_node_nw_property(&(node->node_nw_props));
-
+    udp_init_socket(node);
     CDL_APPEND(head,&node->graph);  /* append all nodes to the graph HEAD node. Note: we have a circular list */
 
     return node;
