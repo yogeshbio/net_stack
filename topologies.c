@@ -1,4 +1,5 @@
 #include "graph.h"
+#include "comm.h"
 
 
 /*
@@ -59,6 +60,8 @@ graph_t* build_first_topology()
     set_intf_of_node_ip_addr(R2_re, "eth0/3","30.1.1.2",24);
     set_intf_of_node_ip_addr(R2_re, "eth0/5","40.1.1.2",24);
 
+
+    nw_start_pkt_rx_thread(topo);  //start the pkt recv thread
     return topo;
 
 }
