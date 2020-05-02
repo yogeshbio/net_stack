@@ -19,14 +19,14 @@ typedef struct intf_nw_props intf_nw_props_t;
 /* MACROS to get ip and mac addresses from interface and node */
 
 // For INTF
-#define GET_INTF_MAC(intf_ptr)    (intf_ptr)->intf_nw_props.mac.mac_addr         // get interface mac addr
-#define GET_INTF_IP(intf_ptr)     (intf_ptr)->intf_nw_props.intf_ip.ip_addr           // get interface ip addr
+#define GET_INTF_MAC(intf_ptr)      (intf_ptr)->intf_nw_props.mac.mac_addr         // get interface mac addr
+#define GET_INTF_IP(intf_ptr)       (intf_ptr)->intf_nw_props.intf_ip.ip_addr           // get interface ip addr
 #define GET_INTF_MASK(intf_ptr)     (intf_ptr)->intf_nw_props.mask           // get interface mask
            // below both macros are same
 #define IS_INTF_IP_ADDR_CONFIGURED(intf_ptr) \
-        ((intf_ptr)->intf_nw_props.is_ip_addr_configured)? true:false
+                                    ((intf_ptr)->intf_nw_props.is_ip_addr_configured)? true:false
 #define IS_INTF_IN_L3_MODE(intf_ptr) \
-        ((intf_ptr)->intf_nw_props.is_ip_addr_configured)? true:false
+                                    ((intf_ptr)->intf_nw_props.is_ip_addr_configured)? true:false
 
 // For NODE
 #define GET_NODE_LB(node_ptr)     (node_ptr)->node_nw_props.loopback_ip.ip_addr  // get node loopback ip addr
