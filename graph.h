@@ -128,12 +128,12 @@ get_neighbor_node(interface_t* interface)
  */
 static inline interface_t*
 get_intf_by_name_from_node(node_t *node,
-        char* if_name)
+                           char* if_name)
 {
     assert(node);
     for(int i=0; i<MAX_INTF_PER_NODE;i++)
     {
-        if(strcmp(if_name,node->intf[i]->if_name) != 0)
+        if(strncmp(if_name,node->intf[i]->if_name,IF_NAME_SIZE) != 0)
             continue;
 
         return (node->intf[i]); // return pointer to the local interface
@@ -146,7 +146,7 @@ get_intf_by_name_from_node(node_t *node,
  */
 static inline node_t*
 get_node_from_node_name(graph_t* topo,
-        char* node_name)
+                        char* node_name)
 {
     assert(topo);
     node_t* node;
