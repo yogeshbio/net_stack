@@ -28,6 +28,9 @@ typedef struct intf_nw_props intf_nw_props_t;
 #define IS_INTF_IN_L3_MODE(intf_ptr) \
                                     ((intf_ptr)->intf_nw_props.is_ip_addr_configured)? true:false
 
+/* Given an interface, get the other connected interface over a link */
+#define GET_INTF_OTHER(intf_ptr)      &(intf_ptr)->link->intf1 == intf_ptr ? \
+                                      &(intf_ptr)->link->intf2 : &(intf_ptr)->link->intf1
 // For NODE
 #define GET_NODE_LB(node_ptr)     (node_ptr)->node_nw_props.loopback_ip.ip_addr  // get node loopback ip addr
 
