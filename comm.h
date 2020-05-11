@@ -14,3 +14,7 @@
 void udp_init_socket(node_t *node);
 
 void nw_start_pkt_rx_thread(graph_t* topo);
+
+int nw_pkt_tx(char* pkt,
+                 unsigned int pkt_size,
+                 interface_t* intf);

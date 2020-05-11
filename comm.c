@@ -8,7 +8,9 @@
  *   1. Assign unique UDP port number for each node
  *   2. Open UDP socket for all the nodes using the above unique port number
  *   3. Listen on the UDP socket with select()
- *   4. Nodes communicate by sending the data to destination node's port number with IP = 127.0.0.1
+ *   4. Nodes communicate by sending the data to destination node's port number with IP = 127.0.0.1.
+ *      Destination here is a directly connected neighbor node  e.g. R0_re (0/0)
+ *      is connected to R1_re (0/1)
  */
 
 
@@ -25,8 +27,70 @@
 #include "net.h"
 #include <unistd.h> // for close
 
-static int udp_port_no = 40000;
+static int  udp_port_no = 40000;
 static char recv_buffer[MAX_PKT_BUFFER_SIZE];
+static char send_buffer[MAX_PKT_BUFFER_SIZE];
+
+#define HOST_IP_ADDR        "127.0.0.1"
+
+static int
+_nw_pkt_send(int sock_fd,
+            char *pkt_data,
+            unsigned int pkt_size,
+            unsigned int dst_udp_port_no)
+{
+    int rv;
+    struct sockaddr_in dest_addr;
+
+    struct hostent *host = (struct hostent *) gethostbyname(HOST_IP_ADDR);
+    dest_addr.sin_family = AF_INET;
+    dest_addr.sin_port = dst_udp_port_no;
+    dest_addr.sin_addr = *((struct in_addr *)host->h_addr);
+
+    rv = sendto(sock_fd, pkt_data, pkt_size, 0,
+               (struct sockaddr *)&dest_addr, sizeof(struct sockaddr));
+
+    return rv;
+}
+
+
+int nw_pkt_tx(char* pkt,
+               unsigned int pkt_size,
+               interface_t* intf)
+{
+    int rv;
+    node_t* send_node = intf->owner;
+    // since dest is directly connected, we need to use neighbor node
+    node_t* recv_node = get_neighbor_node(intf);
+    if(!recv_node)
+    {
+        return -1;
+    }
+    unsigned int dst_udp_port = recv_node->udp_port_no;
+    int sock =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if(sock < 0)
+    {
+        printf(" Sending socket creation failed with error:%d\n",errno);
+        return -1;
+    }
+    interface_t *other_intf = GET_INTF_OTHER(intf);
+    memset(send_buffer, 0, MAX_PKT_BUFFER_SIZE);
+    char* pkt_with_aux_data = send_buffer;
+    strncpy(pkt_with_aux_data,
+            other_intf->if_name,    // copy the name of the dest node interface
+            IF_NAME_SIZE);
+    pkt_with_aux_data[IF_NAME_SIZE] = '\0';
+    memcpy(pkt_with_aux_data + IF_NAME_SIZE,  // copy actual data
+           pkt,
+           pkt_size);
+    rv = _nw_pkt_send(sock,
+                      pkt_with_aux_data,
+                      pkt_size + IF_NAME_SIZE,
+                      dst_udp_port
+                    );
+    close(sock);
+    return rv;
+}
 
 static int get_unique_udp_port_no()
 {
@@ -73,13 +137,33 @@ void udp_init_socket(node_t *node)
     node->udp_socket_fd = socket_fd;
 }
 
+int
+pkt_receive(node_t *node, interface_t *interface,
+            char *pkt, unsigned int pkt_size)
+{
+    printf("\n msg received =%s, on node =%s, interface name = %s\n", pkt, node->node_name, interface->if_name);
+    return 0;
+}
 
 static void
 _pkt_rx(node_t*  receiving_node,
         char* pkt_rx_with_aux_data,
         unsigned int bytes_recvd)
 {
+    char *recv_intf_name = pkt_rx_with_aux_data;
+    /* we can pass the whole recvd aux data as the function below uses only the first 16 bytes*/
+    interface_t *recv_intf = get_intf_by_name_from_node(receiving_node, recv_intf_name);
 
+    if(!recv_intf){
+        printf("Error : Pkt recvd on unknown interface %s on node %s\n",
+                    recv_intf->if_name, receiving_node->node_name);
+        return;
+    }
+    /* Pass the actual data as we already know the receiving interface name */
+    pkt_receive(receiving_node,
+                recv_intf,
+                pkt_rx_with_aux_data + IF_NAME_SIZE,
+                bytes_recvd - IF_NAME_SIZE);
 
 }
 /*   */
