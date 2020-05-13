@@ -11,6 +11,10 @@
  *   4. Nodes communicate by sending the data to destination node's port number with IP = 127.0.0.1.
  *      Destination here is a directly connected neighbor node  e.g. R0_re (0/0)
  *      is connected to R1_re (0/1)
+ *
+ *    Note: send_buffer is static global and could result in buffer corruption in case
+ *    of multi threading when multiple nodes try to send data. To prevent this use
+ *    per node send buffer in the node struct or mutex mechanism to prevent corruption of data.
  */
 
 
@@ -31,13 +35,14 @@ static int  udp_port_no = 40000;
 static char recv_buffer[MAX_PKT_BUFFER_SIZE];
 static char send_buffer[MAX_PKT_BUFFER_SIZE];
 
-#define HOST_IP_ADDR        "127.0.0.1"
+#define HOST_IP_ADDR                  "127.0.0.1"
+
 
 static int
 _nw_pkt_send(int sock_fd,
-            char *pkt_data,
-            unsigned int pkt_size,
-            unsigned int dst_udp_port_no)
+             char *pkt_data,
+             unsigned int pkt_size,
+             unsigned int dst_udp_port_no)
 {
     int rv;
     struct sockaddr_in dest_addr;
@@ -55,8 +60,8 @@ _nw_pkt_send(int sock_fd,
 
 
 int nw_pkt_tx(char* pkt,
-               unsigned int pkt_size,
-               interface_t* intf)
+              unsigned int pkt_size,
+              interface_t* intf)
 {
     int rv;
     node_t* send_node = intf->owner;
@@ -83,7 +88,7 @@ int nw_pkt_tx(char* pkt,
     memcpy(pkt_with_aux_data + IF_NAME_SIZE,  // copy actual data
            pkt,
            pkt_size);
-    rv = _nw_pkt_send(sock,
+    rv = _nw_pkt_send(sock,                  //actual send happens here using socket api
                       pkt_with_aux_data,
                       pkt_size + IF_NAME_SIZE,
                       dst_udp_port
@@ -91,6 +96,25 @@ int nw_pkt_tx(char* pkt,
     close(sock);
     return rv;
 }
+
+/* Flooding from all the interfaces exept the exempted interface */
+int
+nw_pkt_send_flood(node_t *node, interface_t *exempted_intf,
+                  char *pkt, unsigned int pkt_size)
+{
+    interface_t *intf;
+
+    for(int i=0; i < MAX_INTF_PER_NODE; i++){
+
+        intf = node->intf[i];     // from node get the interface
+        if(!intf) return 0;
+
+        if(intf != exempted_intf)  //send data if its not an exempted interface
+        nw_pkt_tx(pkt, pkt_size, intf); // use the official nw tx functionality
+    }
+    return 0;
+}
+
 
 static int get_unique_udp_port_no()
 {
